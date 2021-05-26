@@ -1,0 +1,43 @@
+use vehicle_service;
+
+ select * from SrvInOutGate
+
+-----------------------------------
+ --get all InOutGate : ko dùng nữa
+
+ drop procedure GetAllInOutGateProc;
+CREATE PROCEDURE GetAllInOutGateProc
+ as
+SELECT a.InOutGateId as InOutGateId, a.InDate as InDate, a.RegisterNo as RegisterNo, a.cusNameTemp as CusNameTemp,
+b.Name as Name, a.VehicleStatusReceive as VehicleStatusReceive,  ServiceId = ((SELECT STRING_AGG(cast(ServiceId as varchar), ',') FROM SrvRepairService where InOutGateId = a.InOutGateId))
+	   from SrvInOutGate a left join SrvEmployee b on b.EmployeeId = a.EmployeeId;
+exec GetAllInOutGateProc;
+
+------------------------------------
+
+-- search InOutGate
+
+drop procedure SearchInOutGate
+CREATE PROCEDURE SearchInOutGate
+	@RegisterNo nvarchar(50),
+	@InOutGateId int,
+	@InDate Datetime,
+	@OutDate Datetime,
+	@VehicleStatusReceive nvarchar
+AS
+BEGIN
+	SELECT a.InOutGateId as InOutGateId, a.InDate as InDate, a.RegisterNo as RegisterNo, a.cusNameTemp as CusNameTemp,
+b.Name as Name, a.VehicleStatusReceive as VehicleStatusReceive,  ServiceId = ((SELECT STRING_AGG(cast(ServiceId as varchar), ',') FROM SrvRepairService where InOutGateId = a.InOutGateId))
+FROM SrvInOutGate a left join SrvEmployee b on b.EmployeeId = a.EmployeeId
+	where (@RegisterNo = '' or @RegisterNo is null or a.RegisterNo = @RegisterNo)
+	and (@InOutGateId is null or @InOutGateId = 0 or a.InOutGateId = @InOutGateId)
+	and ((@InDate is null or @InDate = '' ) or convert(date, a.InDate,102) >= convert(date, @InDate,102))
+	and ((@OutDate is null or @OutDate = '') or convert(date, a.OutDate,102) <= convert(date, @OutDate,102))
+	and ((@VehicleStatusReceive = '' or a.VehicleStatusReceive = null) or a.VehicleStatusReceive = @VehicleStatusReceive)
+	ORDER BY InDate ASC;
+
+	--exec dbo.sp_GetInOutGate @RegisterNo = '', @CardId = null, @ToDate = null, @FromDate = null, @VhcType = 1, @Status = 1
+END
+GO
+exec SearchInOutGate @RegisterNo = '', @InOutGateId = '' , @InDate = '', @OutDate = '', @VehicleStatusReceive = ''
+
